@@ -1,26 +1,42 @@
-* src
-- Makefile
-  link: [[~/Documents/Books/org/Study/commonlisp/books/housou/syllabus-db-server/start-server.lisp]]
-<s
-Bash
-sudo systemctl daemon-reload
-サービスの起動と、OS起動時の自動起動の有効化:
+#+TITLE: シラバス DB サーバの起動手順
 
-Bash
-sudo systemctl enable --now syllabus-server.service
-3. 動作状態の確認
-サービスが正常に起動し、ポート4005で待機しているかを確認するには、以下のコマンドを実行します。
+* 構成
+| ファイル                           | 役割                                                    |
+|------------------------------------+---------------------------------------------------------|
+| housou-syllabus-db-server.lisp     | シラバスの取得・DB・Emacs 向けの org ノート生成           |
+| start-server.lisp                  | DB を読み込み、Swank を 4005 番で起動して待機する         |
+| syllabus-db-server.service         | systemd ユーザーサービスのユニット                       |
+| setup-service.sh                   | ユニットを登録して有効化・起動する                       |
+| db.lispdata                        | シラバス DB（起動時に読み込む。無ければ取得して作る）     |
 
-Bash
-systemctl status syllabus-server.service
-出力の中に Active: active (running) と表示されており、
-かつ一番下のログ出力に Swank server is running on port 4005... が記録されていれば、正常に稼働しています。
+* 登録と起動
+ユニットの =WorkingDirectory= はこのディレクトリの絶対パスを直書きしている。
+クローン先が違う場合は先に書き換える。=ExecStart= は Roswell（=/usr/local/bin/ros=）を使う。
 
-ログの確認方法:
-標準出力（format t の内容など）やエラーメッセージを確認したい場合は、journalctl を使用します。
+#+begin_src sh
+./setup-service.sh
+#+end_src
 
-Bash
-# サービスのログをリアルタイムで監視（Ctrl+Cで終了）
-journalctl -u syllabus-server.service -f
-この設定を行うことで、ターミナルを開きっぱなしにする必要がなくなり、
-OS起動後にEmacsから直接 M-x slime-connect で localhost の 4005 へ接続できるようになります。
+ユニットを =~/.config/systemd/user/= にコピーし、daemon-reload・enable・restart まで行う。
+ユーザーサービスなので sudo は不要。ユニットを編集したら再度実行する。
+
+* 動作確認
+#+begin_src sh
+systemctl --user status syllabus-db-server.service
+journalctl --user -u syllabus-db-server.service -f
+#+end_src
+
+=Active: active (running)= で、ログの最後に =Swank server is running on port 4005...= が出ていれば稼働している。
+
+* Emacs 側
+el_conf の =conf/51_org_housou_syllabus_db.el= が 127.0.0.1:4005 へ専用の SLIME 接続を張る。
+起動時に接続できなくても、=C-c h g=（ノート生成）/ =C-c h c=（講義一覧）の実行時に再接続する。
+
+* DB の更新
+=db.lispdata= を消してサービスを再起動すると、全カテゴリを取得し直して保存する。
+取得には時間がかかり、その間は Swank が起動しない。
+
+#+begin_src sh
+rm db.lispdata
+systemctl --user restart syllabus-db-server.service
+#+end_src
