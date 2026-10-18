@@ -1,0 +1,22 @@
+[Unit]
+Description=Lisp Syllabus Swank Server
+After=network.target
+
+[Service]
+Type=simple
+# 実行時の作業ディレクトリー（自分の環境に合わせて指定）
+WorkingDirectory=/home/mattay350/Documents/Books/org/Study/commonlisp/books/housou/syllabus-db-server
+
+# SBCLを起動して start-server.lisp を実行
+ExecStart=/usr/local/bin/ros run --load start-server.lisp
+
+# クラッシュ時に自動再起動する設定
+Restart=on-failure
+RestartSec=5s
+
+# ログの出力先設定
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target

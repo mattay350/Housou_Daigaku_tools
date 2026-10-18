@@ -1,0 +1,26 @@
+* src
+- Makefile
+  link: [[~/Documents/Books/org/Study/commonlisp/books/housou/syllabus-db-server/start-server.lisp]]
+<s
+Bash
+sudo systemctl daemon-reload
+サービスの起動と、OS起動時の自動起動の有効化:
+
+Bash
+sudo systemctl enable --now syllabus-server.service
+3. 動作状態の確認
+サービスが正常に起動し、ポート4005で待機しているかを確認するには、以下のコマンドを実行します。
+
+Bash
+systemctl status syllabus-server.service
+出力の中に Active: active (running) と表示されており、
+かつ一番下のログ出力に Swank server is running on port 4005... が記録されていれば、正常に稼働しています。
+
+ログの確認方法:
+標準出力（format t の内容など）やエラーメッセージを確認したい場合は、journalctl を使用します。
+
+Bash
+# サービスのログをリアルタイムで監視（Ctrl+Cで終了）
+journalctl -u syllabus-server.service -f
+この設定を行うことで、ターミナルを開きっぱなしにする必要がなくなり、
+OS起動後にEmacsから直接 M-x slime-connect で localhost の 4005 へ接続できるようになります。
