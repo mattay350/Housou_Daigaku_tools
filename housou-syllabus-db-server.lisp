@@ -198,7 +198,7 @@
     (format out ":END:~%")
     (format out "** Progress~%")
     (format out "#+BEGIN: columnview :hlines 1 :id local  :maxlevel 3~%")
-    (format out ":END:~%")
+    (format out "#+END:~%")
     ;; lecture-titles のリストをループして TODO を生成
     (format out "** Course~%")
     (loop for title in (syllabus-lecture-titles syllabus)
