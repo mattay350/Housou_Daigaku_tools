@@ -9,7 +9,8 @@
 
 
 (defparameter *user-agent*
-  "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+  "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  "WAKABA（シラバス）へのアクセス時に送る User-Agent。")
 
 (defparameter *urls*
   '("https://www.ouj.ac.jp/kamoku/kyouyou/C/kiban_kiban/"
@@ -23,12 +24,15 @@
  "https://www.ouj.ac.jp/kamoku/kyouyou/C/shizen/"
  "https://www.ouj.ac.jp/kamoku/kyouyou/C/kango/"
  "https://www.ouj.ac.jp/kamoku/kyouyou/C/sotuken/"
- "https://www.ouj.ac.jp/kamoku/kyouyou/C/shisyo/"))
+ "https://www.ouj.ac.jp/kamoku/kyouyou/C/shisyo/")
+  "科目一覧を取得する教養学部のカテゴリページ。")
 
-(defparameter *filepath* "db.lispdata")
+(defparameter *filepath* "db.lispdata"
+  "シラバス DB の保存先（作業ディレクトリからの相対パス）。")
 
 ;; 1. 構造体の定義
 (defstruct syllabus
+  "1科目分のシラバス情報。"
   name
   url
   code
@@ -37,7 +41,8 @@
   lecture-titles)
 
 ;; 2. 動的配列の定義（スペルを :adjustable に修正）
-(defparameter *syllabus-db* (make-array 0 :adjustable t :fill-pointer 0))
+(defparameter *syllabus-db* (make-array 0 :adjustable t :fill-pointer 0)
+  "シラバス DB 本体。syllabus 構造体の可変長ベクタ。")
 
 ;; 3. データベース更新関数
 (defun update-all-syllabus-db ()
@@ -123,6 +128,7 @@
   (format t "Saved to ~A~%" filepath))
 
 (defun load-syllabus-db (filepath)
+  "ファイル FILEPATH から DB を読み込み、*syllabus-db* を置き換える"
   (with-open-file (in filepath
 		      :direction :input
 		      :external-format :utf-8)
@@ -130,7 +136,7 @@
   (format t "Loaded ~D items form ~A~%" (length *syllabus-db*) filepath))
 		  
 (defun init ()
-  "init databese"
+  "DB を初期化する。*filepath* があれば読み込み、なければ全カテゴリを取得して保存する"
   (if (probe-file *filepath*)
     (progn
       (format t "Auto-loading syllabus DB from ~A...~%" *filepath*)
@@ -214,6 +220,7 @@
     (format out "~%* Note~%")))
 
 (defun generate-note (code)
+  "科目コード CODE の科目ノート（org）を返す。該当がなければ \"Not Found\""
   (let ((found (find-if (lambda (s)
 			  (string= (syllabus-code s) code))
 			*syllabus-db*)))
@@ -223,7 +230,7 @@
 
 
 (defun org-get-course (syllabus)
-  "Syllabus構造体を受け取り、Org-modeフォーマットの文字列を生成する"
+  "Syllabus構造体を受け取り、講義タイトルを Org の TODO 見出しにした文字列を返す"
   (with-output-to-string (out)
     ;; lecture-titles のリストをループして TODO を生成
     (loop for title in (syllabus-lecture-titles syllabus)
@@ -231,6 +238,7 @@
 		
 
 (defun get-course (code)
+  "科目コード CODE の講義タイトルを TODO 見出しにした文字列を返す。該当がなければ \"Not Found\""
   (let ((found (find-if (lambda (s)
 			  (string= (syllabus-code s) code))
 			*syllabus-db*)))
@@ -241,7 +249,9 @@
 
 
 (defun emacs-callback-function (func code)
-  ""
+  "Emacs から呼ぶ入口。DB を読み直してから FUNC に応じた文字列を返す。
+FUNC が \"generate-note\" なら科目ノート、\"get-course\" なら講義タイトルの TODO 見出し。
+該当する科目がなければ \"Not Found\"、FUNC が不明なら \"Not found function\" を返す"
   (cond
     ((string= func "generate-note")
      (progn
